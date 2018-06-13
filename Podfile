@@ -10,7 +10,7 @@ target 'XRViewer' do
     pod 'CocoaLumberjack'
     pod 'PopupDialog'
     pod 'pop'
-    pod 'MozillaTelemetry', :git => 'https://github.com/mozilla-mobile/telemetry-ios.git', :branch => 'master'
+#    pod 'MozillaTelemetry', :git => 'https://github.com/mozilla-mobile/telemetry-ios.git', :branch => 'master'
     pod 'FontAwesomeKit'
   # pod "GCDWebServer", "~> 3.0"
 end
