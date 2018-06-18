@@ -61,6 +61,8 @@ typedef void (^DidRemovePlaneAnchors)(void);
 typedef void (^DidUpdateWindowSize)(void);
 typedef void (^DetectionImageCreatedCompletionType)(BOOL success, NSString* errorString);
 typedef void (^ActivateDetectionImageCompletionBlock)(BOOL success, NSString* errorString, NSDictionary* detectedImageAnchor);
+typedef void (^DetectionObjectCreatedCompletionType)(BOOL success, NSString* errorString);
+typedef void (^ActivateDetectionObjectCompletionBlock)(BOOL success, NSString* errorString, NSDictionary* detectedObjectAnchor);
 
 @interface ARKController : NSObject
 
@@ -259,6 +261,65 @@ typedef void (^ActivateDetectionImageCompletionBlock)(BOOL success, NSString* er
  @param completion The completion block that will be called with the outcome of the destroy
  */
 - (void)destroyDetectionImage:(NSString *)imageName completion:(DetectionImageCreatedCompletionType)completion;
+
+
+
+/**
+ If SendWorldSensingDataAuthorizationStateAuthorized, creates an ARReferenceObject using the
+ information in the dictionary as input. Otherwise, enqueue the request for when the user
+ accepts and SendWorldSensingDataAuthorizationStateAuthorized is set
+ 
+ @param referenceObjectDictionary the dictionary representing the ARReferenceObject
+ @param completion the promise to be resolved when the image is created
+ */
+- (void)createDetectionObject:(NSDictionary *)referenceObjectDictionary completion:(DetectionObjectCreatedCompletionType)completion;
+
+/**
+ Adds the object to the set of references objects in the configuration object and re-runs the session.
+ 
+ - If the object hasn't been created, it calls the promise with an error string.
+ 
+ - It also fails when the current session is not of type ARWorldTrackingConfiguration
+ 
+ - If the object trying to be activated was already activated but not yet detected, respond with an error string in the callback
+ 
+ - If the object trying to be activated was already activated and yet detected, we remove it from the session, so
+ it can be detected again by ARKit
+ 
+ @param objectName the name of the object to be added to the session. It must have been previously created with createObject
+ @param completion a completion block acting a promise
+ */
+- (void)activateDetectionObject:(NSString *)objectName completion:(ActivateDetectionObjectCompletionBlock)completion;
+
+/**
+ Removes the reference object from the current set of reference objects and re-runs the session
+ 
+ - It fails when the current session is not of type ARWorldTrackingConfiguration
+ 
+ - It fails when the object trying to be deactivated is not in the current set of detection objects
+ 
+ - It fails when the object trying to be deactivated was already detected
+ 
+ - It fails when the object trying to be deactivated is still active
+ 
+ @param objectName The name of the object to be deactivated
+ @param completion The promise that will be called with the outcome of the deactivation
+ */
+- (void)deactivateDetectionObject:(NSString *)objectName completion:(DetectionImageCreatedCompletionType)completion;
+
+/**
+ Destroys the detection object
+ 
+ - Fails if the object to be destroy doesn't exist
+ 
+ @param objectName The name of the object to be destroyed
+ @param completion The completion block that will be called with the outcome of the destroy
+ */
+- (void)destroyDetectionObject:(NSString *)objectName completion:(DetectionImageCreatedCompletionType)completion;
+
+
+
+
 
 - (void)setSendingWorldSensingDataAuthorizationStatus:(SendWorldSensingDataAuthorizationState)sendingWorldSensingDataAuthorizationStatus;
 

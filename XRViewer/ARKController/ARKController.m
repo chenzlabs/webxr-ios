@@ -73,6 +73,19 @@
 /// Dictionary holding completion blocks by image name: when an image anchor is removed,
 /// if the name exsist in this dictionary, call activate again using the callback stored here.
 @property(nonatomic, strong) NSMutableDictionary* detectionImageActivationAfterRemovalPromises;
+
+/// Dictionary holding ARReferenceObjects by name
+@property(nonatomic, strong) NSMutableDictionary* referenceObjectMap;
+/// Dictionary holding completion blocks by object name
+@property(nonatomic, strong) NSMutableDictionary* detectionObjectActivationPromises;
+/// Dictionary holding completion blocks by object name
+@property(nonatomic, strong) NSMutableDictionary* detectionObjectCreationPromises;
+/// Array holding dictionaries representing detection object data
+@property(nonatomic, strong) NSMutableArray *detectionObjectCreationRequests;
+/// Dictionary holding completion blocks by object name: when an object anchor is removed,
+/// if the name exsist in this dictionary, call activate again using the callback stored here.
+@property(nonatomic, strong) NSMutableDictionary* detectionObjectActivationAfterRemovalPromises;
+
 /**
  We don't send the face geometry on every frame, for performance reasons. This number indicates the
  current number of frames without sending the face geometry
@@ -157,7 +170,13 @@
         self.detectionImageCreationRequests = [NSMutableArray new];
         self.detectionImageCreationPromises = [NSMutableDictionary new];
         self.detectionImageActivationAfterRemovalPromises = [NSMutableDictionary new];
-        
+
+        self.detectionObjectActivationPromises = [NSMutableDictionary new];
+        self.referenceObjectMap = [NSMutableDictionary new];
+        self.detectionObjectCreationRequests = [NSMutableArray new];
+        self.detectionObjectCreationPromises = [NSMutableDictionary new];
+        self.detectionObjectActivationAfterRemovalPromises = [NSMutableDictionary new];
+
         self.numberOfFramesWithoutSendingFaceGeometry = 0;
     }
     
@@ -388,6 +407,15 @@
     self.detectionImageActivationAfterRemovalPromises = [NSMutableDictionary new];
 }
 
+- (void)removeDetectionObjects {
+    self.detectionObjectActivationPromises = [NSMutableDictionary new];
+    self.referenceObjectMap = [NSMutableDictionary new];
+    self.detectionObjectCreationRequests = [NSMutableArray new];
+    self.detectionObjectCreationPromises = [NSMutableDictionary new];
+    self.detectionObjectActivationAfterRemovalPromises = [NSMutableDictionary new];
+}
+
+
 - (void)removeDistantAnchors {
     matrix_float4x4 cameraTransform = [[[self.session currentFrame] camera] transform];
     float distanceThreshold = [[NSUserDefaults standardUserDefaults] floatForKey:distantAnchorsDistanceKey];
@@ -441,6 +469,14 @@
     [self.detectionImageCreationRequests removeAllObjects];
     [self.detectionImageCreationPromises removeAllObjects];
     [self.detectionImageActivationAfterRemovalPromises removeAllObjects];
+}
+
+- (void)clearObjectDetectionDictionaries {
+    [self.detectionObjectActivationPromises removeAllObjects];
+    [self.referenceObjectMap removeAllObjects];
+    [self.detectionObjectCreationRequests removeAllObjects];
+    [self.detectionObjectCreationPromises removeAllObjects];
+    [self.detectionObjectActivationAfterRemovalPromises removeAllObjects];
 }
 
 - (void)removeAllAnchorsExceptPlanes {
@@ -498,6 +534,12 @@
     }
 }
 
+- (void)createRequestedDetectionObjects {
+    for (NSDictionary* referenceObjectDictionary in self.detectionObjectCreationRequests) {
+        [self _createDetectionObject:referenceObjectDictionary];
+    }
+}
+
 - (void)createDetectionImage:(NSDictionary *)referenceImageDictionary completion:(DetectionImageCreatedCompletionType)completion {
     switch (self.sendingWorldSensingDataAuthorizationStatus) {
         case SendWorldSensingDataAuthorizationStateAuthorized: {
@@ -514,6 +556,27 @@
             NSLog(@"Attempt to create a detection image but world sensing data authorization is not determined, enqueue the request");
             self.detectionImageCreationPromises[referenceImageDictionary[@"uid"]] = completion;
             [self.detectionImageCreationRequests addObject: referenceImageDictionary];
+            break;
+        }
+    }
+}
+
+- (void)createDetectionObject:(NSDictionary *)referenceObjectDictionary completion:(DetectionObjectCreatedCompletionType)completion {
+    switch (self.sendingWorldSensingDataAuthorizationStatus) {
+        case SendWorldSensingDataAuthorizationStateAuthorized: {
+            self.detectionObjectCreationPromises[referenceObjectDictionary[@"uid"]] = completion;
+            [self _createDetectionObject:referenceObjectDictionary];
+            break;
+        }
+        case SendWorldSensingDataAuthorizationStateDenied: {
+            completion(NO, @"The user denied access to world sensing data");
+            break;
+        }
+            
+        case SendWorldSensingDataAuthorizationStateNotDetermined: {
+            NSLog(@"Attempt to create a detection object but world sensing data authorization is not determined, enqueue the request");
+            self.detectionObjectCreationPromises[referenceObjectDictionary[@"uid"]] = completion;
+            [self.detectionObjectCreationRequests addObject: referenceObjectDictionary];
             break;
         }
     }
@@ -539,6 +602,38 @@
     
     self.detectionImageCreationPromises[referenceImageDictionary[@"uid"]] = nil;
 }
+
+- (void)_createDetectionObject:(NSDictionary *)referenceObjectDictionary {
+    DetectionObjectCreatedCompletionType block = self.detectionObjectCreationPromises[referenceObjectDictionary[@"uid"]];
+
+    if (@available(iOS 12.0, *)) {
+
+    ARReferenceObject *referenceObject = [self createReferenceObjectFromDictionary:referenceObjectDictionary];
+    if (referenceObject) {
+        self.referenceObjectMap[referenceObject.name] = referenceObject;
+        NSLog(@"Detection object created: %@", referenceObject.name);
+        
+        if (block) {
+            block(YES, nil);
+        }
+    } else {
+        NSLog(@"Cannot create detection object from dictionary: %@", referenceObjectDictionary[@"uid"]);
+        if (block) {
+            block(NO, @"Error creating the ARReferenceObject");
+        }
+    }
+
+        
+    } else {
+        NSLog(@"Cannot create detection object prior to iOS 12.0; dictionary: %@", referenceObjectDictionary[@"uid"]);
+        if (block) {
+            block(NO, @"Error creating the ARReferenceObject");
+        }
+    }
+
+    self.detectionObjectCreationPromises[referenceObjectDictionary[@"uid"]] = nil;
+}
+
 
 - (void)activateDetectionImage:(NSString *)imageName completion:(ActivateDetectionImageCompletionBlock)completion {
     if ([[self configuration] isKindOfClass:[ARFaceTrackingConfiguration class]]) {
@@ -590,6 +685,64 @@
     }
 }
 
+- (void)activateDetectionObject:(NSString *)objectName completion:(ActivateDetectionObjectCompletionBlock)completion {
+    if (@available(iOS 12.0, *)) {
+
+    if ([[self configuration] isKindOfClass:[ARFaceTrackingConfiguration class]]) {
+        completion(NO, @"Cannot activate a detection object when using the front facing camera", nil);
+        return;
+    }
+    
+    ARWorldTrackingConfiguration* worldTrackingConfiguration = (ARWorldTrackingConfiguration*)[self configuration];
+        ARReferenceObject *referenceObject = self.referenceObjectMap[objectName];
+    if (referenceObject) {
+        NSMutableSet* currentDetectionObjects = [worldTrackingConfiguration detectionObjects] != nil ? [[worldTrackingConfiguration detectionObjects] mutableCopy] : [NSMutableSet new];
+        if (![currentDetectionObjects containsObject:referenceObject]) {
+            [currentDetectionObjects addObject: referenceObject];
+            [worldTrackingConfiguration setDetectionObjects: currentDetectionObjects];
+            
+            self.detectionObjectActivationPromises[referenceObject.name] = completion;
+            [[self session] runWithConfiguration:[self configuration]];
+        } else {
+            if (self.detectionObjectActivationPromises[referenceObject.name]) {
+                // Trying to activate an object that hasn't been activated yet, return an error on the second promise, but keep the first
+                completion(NO, @"Trying to activate an object that's already activated but not found yet", nil);
+                return;
+            } else {
+                // Activating an already activated and found object, remove the anchor from the scene
+                // so it can be detected again
+                for(ARAnchor* anchor in self.session.currentFrame.anchors) {
+                    if ([anchor isKindOfClass:[ARObjectAnchor class]]) {
+                        ARObjectAnchor* objectAnchor = (ARObjectAnchor*)anchor;
+                        if ([objectAnchor.referenceObject.name isEqualToString:objectName]) {
+                            // Remove the reference image fromt he session configuration and run again
+                            [currentDetectionObjects removeObject:referenceObject];
+                            [worldTrackingConfiguration setDetectionImages: currentDetectionObjects];
+                            [[self session] runWithConfiguration:[self configuration]];
+                            
+                            // When the anchor is removed and didRemoveAnchor callback gets called, look in this map
+                            // and see if there is a promise for the recently removed image anchor. If so, call
+                            // activateDetectionImage again with the image name of the removed anchor, and the completion set here
+                            self.detectionObjectActivationAfterRemovalPromises[referenceObject.name] = completion;
+                            [self.session removeAnchor: anchor];
+                            return;
+                        }
+                    }
+                    
+                }
+            }
+        }
+    } else {
+        completion(NO, [NSString stringWithFormat:@"The object %@ doesn't exist", objectName], nil);
+    }
+
+    } else {
+        completion(NO, @"Cannot activate a detection object prior to iOS 12.0", nil);
+        return;
+    }
+}
+
+
 - (void)deactivateDetectionImage:(NSString *)imageName completion:(DetectionImageCreatedCompletionType)completion {
     if ([[self configuration] isKindOfClass:[ARFaceTrackingConfiguration class]]) {
         completion(NO, @"Cannot deactivate a detection image when using the front facing camera");
@@ -621,6 +774,45 @@
     }
 }
 
+- (void)deactivateDetectionObject:(NSString *)objectName completion:(DetectionObjectCreatedCompletionType)completion {
+    if (@available(iOS 12.0, *)) {
+        
+    if ([[self configuration] isKindOfClass:[ARFaceTrackingConfiguration class]]) {
+        completion(NO, @"Cannot deactivate a detection object when using the front facing camera");
+        return;
+    }
+    
+    ARWorldTrackingConfiguration* worldTrackingConfiguration = (ARWorldTrackingConfiguration*)[self configuration];
+    ARReferenceObject *referenceObject = self.referenceObjectMap[objectName];
+    
+    NSMutableSet* currentDetectionObjects = [worldTrackingConfiguration detectionObjects] != nil ? [[worldTrackingConfiguration detectionObjects] mutableCopy] : [NSMutableSet new];
+    if ([currentDetectionObjects containsObject:referenceObject]) {
+        if (self.detectionObjectActivationPromises[referenceObject.name]) {
+            NSLog(@"The object trying to deactivate is activated and hasn't been found yet, return error");
+            // The object trying to deactivate hasn't been found yet, return an error on the activation block and remove it
+            ActivateDetectionObjectCompletionBlock activationBlock = self.detectionObjectActivationPromises[referenceObject.name];
+            activationBlock(NO, @"The object has been deactivated", nil);
+            self.detectionObjectActivationPromises[referenceObject.name] = nil;
+            return;
+        }
+        
+        [currentDetectionObjects removeObject: referenceObject];
+        [worldTrackingConfiguration setDetectionObjects: currentDetectionObjects];
+        
+        self.detectionObjectActivationPromises[referenceObject.name] = nil;
+        [[self session] runWithConfiguration:[self configuration]];
+        completion(YES, nil);
+    } else {
+        completion(NO, @"The object trying to deactivate doesn't exist");
+    }
+
+    } else {
+        completion(NO, @"Cannot deactivate a detection object prior to iOS 12.0");
+        return;
+    }
+}
+
+
 - (void)destroyDetectionImage:(NSString *)imageName completion:(DetectionImageCreatedCompletionType)completion {
     ARReferenceImage *referenceImage = self.referenceImageMap[imageName];
     if (referenceImage) {
@@ -632,6 +824,26 @@
         completion(NO, @"The image doesn't exist");
     }
 }
+
+- (void)destroyDetectionObject:(NSString *)objectName completion:(DetectionObjectCreatedCompletionType)completion {
+    if (@available(iOS 12.0, *)) {
+        
+    ARReferenceObject *referenceObject = self.referenceObjectMap[objectName];
+    if (referenceObject) {
+        self.referenceObjectMap[objectName] = nil;
+        self.detectionObjectActivationPromises[objectName] = nil;
+        
+        completion(YES, nil);
+    } else {
+        completion(NO, @"The object doesn't exist");
+    }
+        
+    } else {
+        completion(NO, @"Cannot destroy a detection object prior to iOS 12.0");
+        return;
+    }
+}
+
 
 - (ARReferenceImage*)createReferenceImageFromDictionary:(NSDictionary*)referenceImageDictionary {
     CGFloat physicalWidth = [referenceImageDictionary[@"physicalWidth"] doubleValue];
@@ -660,6 +872,24 @@
     CGDataProviderRelease(dataProvider);
     CGColorSpaceRelease(colorSpace);
     return result;
+}
+
+- (ARReferenceObject*)createReferenceObjectFromDictionary:(NSDictionary*)referenceObjectDictionary
+NS_AVAILABLE_IOS(12.0)
+{
+    if (@available(iOS 12.0, *)) {
+        // FIXME: file URL is unlikely to work here!
+        NSURL* url = [NSURL fileURLWithPath:referenceObjectDictionary[@"url"] isDirectory:false];
+        NSError* error = nil;
+        ARReferenceObject* object = [[ARReferenceObject alloc] initWithArchiveURL:url error:&error];
+        if (error != nil) {
+            NSLog(@"ARReferenceObject initWithArchiveURL error: %@", error);
+        }
+        return object;
+    } else {
+        NSLog(@"Cannot create reference object from dictionary prior to iOS 12.0: %@", referenceObjectDictionary);
+        return nil;
+    }
 }
 
 - (void)switchCameraButtonTapped {

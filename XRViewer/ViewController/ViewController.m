@@ -840,6 +840,22 @@ typedef void (^UICompletion)(void);
         [[blockSelf arkController] createDetectionImage:dictionary completion:completion];
     }];
     
+    [[self webController] setOnActivateDetectionObject:^(NSString *objectName, ActivateDetectionObjectCompletionBlock completion) {
+        [[blockSelf arkController] activateDetectionObject:objectName completion:completion];
+    }];
+    
+    [[self webController] setOnDeactivateDetectionObject:^(NSString *objectName, CreateDetectionObjectCompletionBlock completion) {
+        [[blockSelf arkController] deactivateDetectionObject:objectName completion:completion];
+    }];
+    
+    [[self webController] setOnDestroyDetectionObject:^(NSString *objectName, CreateDetectionObjectCompletionBlock completion) {
+        [[blockSelf arkController] destroyDetectionObject:objectName completion:completion];
+    }];
+    
+    [[self webController] setOnCreateDetectionObject:^(NSDictionary *dictionary, CreateDetectionObjectCompletionBlock completion) {
+        [[blockSelf arkController] createDetectionObject:dictionary completion:completion];
+    }];
+    
     [[self webController] setOnSwitchCameraButtonTapped:^{
         [[blockSelf arkController] switchCameraButtonTapped];
     }];

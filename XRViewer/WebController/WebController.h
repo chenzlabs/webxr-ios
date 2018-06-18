@@ -13,6 +13,9 @@ typedef void (^ResultArrayBlock)(NSArray *);
 typedef void (^ImageDetectedBlock)(NSDictionary *);
 typedef void (^ActivateDetectionImageCompletionBlock)(BOOL success, NSString* errorString, NSDictionary* detectedImageAnchor);
 typedef void (^CreateDetectionImageCompletionBlock)(BOOL success, NSString* errorString);
+typedef void (^ObjectDetectedBlock)(NSDictionary *);
+typedef void (^ActivateDetectionObjectCompletionBlock)(BOOL success, NSString* errorString, NSDictionary* detectedImageAnchor);
+typedef void (^CreateDetectionObjectCompletionBlock)(BOOL success, NSString* errorString);
 
 typedef void (^OnRemoveObjects)(NSArray * );
 typedef NSDictionary * (^OnJSUpdateData)(void);
@@ -35,6 +38,11 @@ typedef void (^OnActivateDetectionImage)(NSString*, ActivateDetectionImageComple
 typedef void (^OnDeactivateDetectionImage)(NSString*, CreateDetectionImageCompletionBlock);
 typedef void (^OnDestroyDetectionImage)(NSString*, CreateDetectionImageCompletionBlock);
 typedef void (^OnCreateDetectionImage)(NSDictionary*, CreateDetectionImageCompletionBlock);
+typedef void (^OnAddObjectAnchor)(NSDictionary*, ObjectDetectedBlock);
+typedef void (^OnActivateDetectionObject)(NSString*, ActivateDetectionObjectCompletionBlock);
+typedef void (^OnDeactivateDetectionObject)(NSString*, CreateDetectionObjectCompletionBlock);
+typedef void (^OnDestroyDetectionObject)(NSString*, CreateDetectionObjectCompletionBlock);
+typedef void (^OnCreateDetectionObject)(NSDictionary*, CreateDetectionObjectCompletionBlock);
 
 @interface WebController : NSObject
 
@@ -64,6 +72,11 @@ typedef void (^OnCreateDetectionImage)(NSDictionary*, CreateDetectionImageComple
 @property(nonatomic, copy) OnDeactivateDetectionImage onDeactivateDetectionImage;
 @property(nonatomic, copy) OnDestroyDetectionImage onDestroyDetectionImage;
 @property(nonatomic, copy) OnCreateDetectionImage onCreateDetectionImage;
+@property(nonatomic, copy) OnAddObjectAnchor onAddObjectAnchor;
+@property(nonatomic, copy) OnActivateDetectionObject onActivateDetectionObject;
+@property(nonatomic, copy) OnDeactivateDetectionObject onDeactivateDetectionObject;
+@property(nonatomic, copy) OnDestroyDetectionObject onDestroyDetectionObject;
+@property(nonatomic, copy) OnCreateDetectionObject onCreateDetectionObject;
 
 @property (nonatomic, strong) Animator *animator;
 
