@@ -1087,6 +1087,12 @@ typedef void (^UICompletion)(void);
 - (void)handleOnWatchARWithRequest: (NSDictionary*)request {
     __weak typeof (self) blockSelf = self;
     
+    // FIXME: first run, this can happen before arkController is ready!
+    if (![self arkController]) {
+        NSLog(@"handleOnWatchARWithRequest: no arkController yet, forcing setupArkController");
+        [self setupARKController];
+    }
+    
     [[self arkController] setComputerVisionDataEnabled: false];
     [[[self stateController] state] setUserGrantedSendingComputerVisionData:false];
     [[[self stateController] state] setSendComputerVisionData: true];
