@@ -443,18 +443,58 @@ inline static WebCompletion debugCompletion(NSString *name)
             });
         }
     } else if ([[message name] isEqualToString:WEB_AR_CREATE_OBJECT_ANCHOR_MESSAGE]) {
-        NSDictionary *objectAnchorInfoDictionary = [message body];
+        NSMutableDictionary *objectAnchorInfoDictionary = [[message body] mutableCopy];
         NSString *createDetectionObjectCallback = [[message body] objectForKey:WEB_AR_CALLBACK_OPTION];
-        if ([self onCreateDetectionObject]) {
-            [self onCreateDetectionObject](objectAnchorInfoDictionary, ^(BOOL success, NSString* errorString) {
-                NSMutableDictionary* responseDictionary = [NSMutableDictionary new];
-                responseDictionary[@"created"] = @(success);
-                if (errorString) {
-                    responseDictionary[@"error"] = errorString;
-                }
-                [blockSelf callWebMethod:createDetectionObjectCallback paramJSON:responseDictionary webCompletion:NULL];
-            });
-        }
+        
+        NSURLSessionDownloadTask* dl =
+            [[NSURLSession sharedSession]
+                downloadTaskWithURL:[NSURL URLWithString:objectAnchorInfoDictionary[@"url"]]
+                completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        
+                    if (error) {
+                        NSLog(@"downloadTaskWithURL completionHandler error: %@", error);
+                        NSMutableDictionary* responseDictionary = [NSMutableDictionary new];
+                        responseDictionary[@"created"] = @(FALSE);
+                        responseDictionary[@"error"] = [error localizedDescription];
+                        [blockSelf callWebMethod:createDetectionObjectCallback paramJSON:responseDictionary webCompletion:NULL];
+                        return;
+                    }
+                 
+                    objectAnchorInfoDictionary[@"url"] = [location absoluteString];
+
+                    if ([self onCreateDetectionObject]) {
+                        [self onCreateDetectionObject](objectAnchorInfoDictionary, ^(BOOL success, NSString* errorString) {
+                            NSMutableDictionary* responseDictionary = [NSMutableDictionary new];
+                            responseDictionary[@"created"] = @(success);
+                            if (errorString) {
+                                responseDictionary[@"error"] = errorString;
+                            }
+                            
+                            // delete the temp file
+                            NSError* error = nil;
+                            if ([[NSFileManager defaultManager] removeItemAtPath:[location path] error:&error]) {
+                                NSLog(@"[Error] %@ (%@)", error, location);
+                            }
+                            
+                            [blockSelf callWebMethod:createDetectionObjectCallback paramJSON:responseDictionary webCompletion:NULL];
+                        });
+                    } else {
+                        // delete the temp file
+                        NSError* error = nil;
+                        if ([[NSFileManager defaultManager] removeItemAtPath:[location path] error:&error]) {
+                            NSLog(@"[Error] %@ (%@)", error, location);
+                        }
+                        
+                        NSMutableDictionary* responseDictionary = [NSMutableDictionary new];
+                        responseDictionary[@"created"] = @(FALSE);
+                        responseDictionary[@"error"] = @"No onCreateDetectionObject";
+                        [blockSelf callWebMethod:createDetectionObjectCallback paramJSON:responseDictionary webCompletion:NULL];
+                    }
+                        
+                    });
+                }];
+        [dl resume];
     } else if ([[message name] isEqualToString:WEB_AR_ACTIVATE_DETECTION_OBJECT_MESSAGE]) {
         NSDictionary *objectAnchorInfoDictionary = [message body];
         NSString *objectName = objectAnchorInfoDictionary[WEB_AR_DETECTION_OBJECT_NAME_OPTION];

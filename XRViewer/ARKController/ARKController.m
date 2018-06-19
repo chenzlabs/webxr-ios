@@ -878,10 +878,10 @@
 NS_AVAILABLE_IOS(12.0)
 {
     if (@available(iOS 12.0, *)) {
-        // FIXME: file URL is unlikely to work here!
-        NSURL* url = [NSURL fileURLWithPath:referenceObjectDictionary[@"url"] isDirectory:false];
         NSError* error = nil;
-        ARReferenceObject* object = [[ARReferenceObject alloc] initWithArchiveURL:url error:&error];
+        // NOTE: must be file: URL
+        ARReferenceObject* object = [[ARReferenceObject alloc] initWithArchiveURL:[NSURL URLWithString: referenceObjectDictionary[@"url"]] error:&error];
+        object.name = referenceObjectDictionary[@"uid"];
         if (error != nil) {
             NSLog(@"ARReferenceObject initWithArchiveURL error: %@", error);
         }
