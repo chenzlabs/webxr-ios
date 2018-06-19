@@ -663,7 +663,7 @@
                     if ([anchor isKindOfClass:[ARImageAnchor class]]) {
                         ARImageAnchor* imageAnchor = (ARImageAnchor*)anchor;
                         if ([imageAnchor.referenceImage.name isEqualToString:imageName]) {
-                            // Remove the reference image fromt he session configuration and run again
+                            // Remove the reference image from the session configuration and run again
                             [currentDetectionImages removeObject:referenceImage];
                             [worldTrackingConfiguration setDetectionImages: currentDetectionImages];
                             [[self session] runWithConfiguration:[self configuration]];
@@ -715,14 +715,14 @@
                     if ([anchor isKindOfClass:[ARObjectAnchor class]]) {
                         ARObjectAnchor* objectAnchor = (ARObjectAnchor*)anchor;
                         if ([objectAnchor.referenceObject.name isEqualToString:objectName]) {
-                            // Remove the reference image fromt he session configuration and run again
+                            // Remove the reference object from the session configuration and run again
                             [currentDetectionObjects removeObject:referenceObject];
-                            [worldTrackingConfiguration setDetectionImages: currentDetectionObjects];
+                            [worldTrackingConfiguration setDetectionObjects: currentDetectionObjects];
                             [[self session] runWithConfiguration:[self configuration]];
                             
                             // When the anchor is removed and didRemoveAnchor callback gets called, look in this map
-                            // and see if there is a promise for the recently removed image anchor. If so, call
-                            // activateDetectionImage again with the image name of the removed anchor, and the completion set here
+                            // and see if there is a promise for the recently removed object anchor. If so, call
+                            // activateDetectionObject again with the object name of the removed anchor, and the completion set here
                             self.detectionObjectActivationAfterRemovalPromises[referenceObject.name] = completion;
                             [self.session removeAnchor: anchor];
                             return;
@@ -1376,6 +1376,20 @@ NS_AVAILABLE_IOS(12.0)
                     self.detectionImageActivationPromises[addedImageAnchor.referenceImage.name] = nil;
                 }
             }
+            
+            if (@available(iOS 12.0, *)) {
+
+            if ([addedAnchor isKindOfClass:[ARObjectAnchor class]]) {
+                ARObjectAnchor* addedObjectAnchor = (ARObjectAnchor*)addedAnchor;
+                if ([[self.detectionObjectActivationPromises allKeys] containsObject:addedObjectAnchor.referenceObject.name]) {
+                    // Call the detection object block
+                    ActivateDetectionObjectCompletionBlock block = self.detectionObjectActivationPromises[addedObjectAnchor.referenceObject.name];
+                    block(YES, nil, addedAnchorDictionary);
+                    self.detectionObjectActivationPromises[addedObjectAnchor.referenceObject.name] = nil;
+                }
+            }
+                
+            }
         }
     }
 
@@ -1438,6 +1452,20 @@ NS_AVAILABLE_IOS(12.0)
         anchorDictionary[WEB_AR_UUID_OPTION] = [faceAnchor.identifier UUIDString];
         anchorDictionary[WEB_AR_ANCHOR_TYPE] = @"face";
     } else {
+        if (@available(iOS 12.0, *)) {
+            
+        if ([addedAnchor isKindOfClass:[ARObjectAnchor class]]) {
+            // User generated ARObjectAnchor
+            ARObjectAnchor *addedObjectAnchor = (ARObjectAnchor *)addedAnchor;
+            arkitGeneratedAnchorIDUserAnchorIDMap[[[addedAnchor identifier] UUIDString]] = addedObjectAnchor.referenceObject.name;
+            anchorDictionary[WEB_AR_UUID_OPTION] = addedObjectAnchor.referenceObject.name;
+            anchorDictionary[WEB_AR_MUST_SEND_OPTION] = @(NO);
+            anchorDictionary[WEB_AR_ANCHOR_TYPE] = @"object";
+            return [anchorDictionary copy];
+        }
+            
+        }
+
         // Simple, user generated ARAnchor
         NSString *userAnchorID = arkitGeneratedAnchorIDUserAnchorIDMap[[addedAnchor.identifier UUIDString]];
         NSString *name = userAnchorID? userAnchorID: [addedAnchor.identifier UUIDString];
@@ -1646,6 +1674,19 @@ NS_AVAILABLE_IOS(12.0)
                     self.detectionImageActivationAfterRemovalPromises[imageAnchor.referenceImage.name] = nil;
                 }
             }
+            
+            if (@available(iOS 12.0, *)) {
+                
+            if ([removedAnchor isKindOfClass:[ARObjectAnchor class]]) {
+                ARObjectAnchor* objectAnchor = (ARObjectAnchor*)removedAnchor;
+                ActivateDetectionObjectCompletionBlock completion = self.detectionObjectActivationAfterRemovalPromises[objectAnchor.referenceObject.name];
+                if (completion) {
+                    [self activateDetectionObject:objectAnchor.referenceObject.name completion:completion];
+                    self.detectionObjectActivationAfterRemovalPromises[objectAnchor.referenceObject.name] = nil;
+                }
+            }
+
+            }
         }
     }
 
@@ -1670,6 +1711,14 @@ NS_AVAILABLE_IOS(12.0)
         // System generated ARFaceAnchor
         anchorID = [anchor.identifier UUIDString];
     } else {
+        if (@available(iOS 12.0, *)) {
+            if ([anchor isKindOfClass:[ARObjectAnchor class]]) {
+                // User generated ARObjectAnchor
+                ARObjectAnchor *objectAnchor = (ARObjectAnchor *)anchor;
+                anchorID = objectAnchor.referenceObject.name;
+                return anchorID;
+            }
+        }
         // Simple, user generated ARAnchor
         NSString *userAnchorID = arkitGeneratedAnchorIDUserAnchorIDMap[[anchor.identifier UUIDString]];
         NSString *name = userAnchorID? userAnchorID: [anchor.identifier UUIDString];
