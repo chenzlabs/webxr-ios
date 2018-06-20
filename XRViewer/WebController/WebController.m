@@ -454,6 +454,13 @@ inline static WebCompletion debugCompletion(NSString *name)
                         
                     if (error) {
                         NSLog(@"downloadTaskWithURL completionHandler error: %@", error);
+                        
+                        // delete the temp file
+                        NSError* error = nil;
+                        if ([[NSFileManager defaultManager] removeItemAtPath:[location path] error:&error]) {
+                            NSLog(@"!!! download completion handler removeItemAtPath [Error] %@ (%@)", error, location);
+                        }
+                        
                         NSMutableDictionary* responseDictionary = [NSMutableDictionary new];
                         responseDictionary[@"created"] = @(FALSE);
                         responseDictionary[@"error"] = [error localizedDescription];
@@ -471,25 +478,25 @@ inline static WebCompletion debugCompletion(NSString *name)
                                 responseDictionary[@"error"] = errorString;
                             }
                             
+                            [blockSelf callWebMethod:createDetectionObjectCallback paramJSON:responseDictionary webCompletion:NULL];
+                            
                             // delete the temp file
                             NSError* error = nil;
                             if ([[NSFileManager defaultManager] removeItemAtPath:[location path] error:&error]) {
-                                NSLog(@"[Error] %@ (%@)", error, location);
+                                NSLog(@"!!! download completion handler removeItemAtPath [Error] %@ (%@)", error, location);
                             }
-                            
-                            [blockSelf callWebMethod:createDetectionObjectCallback paramJSON:responseDictionary webCompletion:NULL];
                         });
                     } else {
-                        // delete the temp file
-                        NSError* error = nil;
-                        if ([[NSFileManager defaultManager] removeItemAtPath:[location path] error:&error]) {
-                            NSLog(@"[Error] %@ (%@)", error, location);
-                        }
-                        
                         NSMutableDictionary* responseDictionary = [NSMutableDictionary new];
                         responseDictionary[@"created"] = @(FALSE);
                         responseDictionary[@"error"] = @"No onCreateDetectionObject";
                         [blockSelf callWebMethod:createDetectionObjectCallback paramJSON:responseDictionary webCompletion:NULL];
+                        
+                        // delete the temp file
+                        NSError* error = nil;
+                        if ([[NSFileManager defaultManager] removeItemAtPath:[location path] error:&error]) {
+                            NSLog(@"!!! onCreateDetectionObject removeItemAtPath [Error] %@ (%@)", error, location);
+                        }                        
                     }
                         
                     });
