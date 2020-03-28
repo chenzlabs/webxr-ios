@@ -8,9 +8,27 @@
 	<array>
 		<dict>
 			<key>Type</key>
+			<string>PSTextFieldSpecifier</string>
+			<key>Title</key>
+			<string>Home URL</string>
+			<key>Key</key>
+			<string>homeURL</string>
+			<key>DefaultValue</key>
+			<string>https://webxr-ios.webxrexperiments.com/splash.html</string>
+			<key>IsSecure</key>
+			<false/>
+			<key>KeyboardType</key>
+			<string>URL</string>
+			<key>AutocapitalizationType</key>
+			<string>None</string>
+			<key>AutocorrectionType</key>
+			<string>No</string>
+		</dict>
+		<dict>
+			<key>Type</key>
 			<string>PSToggleSwitchSpecifier</string>
 			<key>Title</key>
-			<string>Allow app usage data collection</string>
+			<string>Send Tech and Interaction Data</string>
 			<key>Key</key>
 			<string>useAnalytics</string>
 			<key>DefaultValue</key>
@@ -20,19 +38,57 @@
 			<key>Type</key>
 			<string>PSTextFieldSpecifier</string>
 			<key>Title</key>
-			<string>Home URL</string>
+			<string>ARKit Shutdown Delay</string>
 			<key>Key</key>
-			<string>homeURL</string>
+			<string>secondsInBackground</string>
 			<key>DefaultValue</key>
-			<string>https://ios-viewer.webxrexperiments.com/viewer.html</string>
+			<string>60</string>
 			<key>IsSecure</key>
 			<false/>
 			<key>KeyboardType</key>
-			<string>URL</string>
+			<string>NumberPad</string>
 			<key>AutocapitalizationType</key>
 			<string>None</string>
 			<key>AutocorrectionType</key>
 			<string>No</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSTextFieldSpecifier</string>
+			<key>Title</key>
+			<string>Anchor retention threshold (meters)</string>
+			<key>Key</key>
+			<string>distantAnchorsDistance</string>
+			<key>DefaultValue</key>
+			<string>3</string>
+			<key>IsSecure</key>
+			<false/>
+			<key>KeyboardType</key>
+			<string>NumberPad</string>
+			<key>AutocapitalizationType</key>
+			<string>None</string>
+			<key>AutocorrectionType</key>
+			<string>No</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Always Allow World Sensing</string>
+			<key>Key</key>
+			<string>alwaysAllowWorldSensing</string>
+			<key>DefaultValue</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Expose WebXR API (restart required)</string>
+			<key>Key</key>
+			<string>exposeWebXRAPI</string>
+			<key>DefaultValue</key>
+			<false/>
 		</dict>
 	</array>
 </dict>

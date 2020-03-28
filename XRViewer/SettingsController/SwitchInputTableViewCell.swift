@@ -11,6 +11,8 @@ import UIKit
 class SwitchInputTableViewCell: UITableViewCell {
 
     @IBOutlet weak var switchControl: UISwitch!
+    @IBOutlet weak var labelTitle: UILabel!
+    @IBOutlet weak var learnMoreButton: UIButton!
     
     override func awakeFromNib() {
         super.awakeFromNib()
