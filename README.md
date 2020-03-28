@@ -1,24 +1,35 @@
 #  Project WebXR Viewer: An AR Project by Mozilla
 
-Help Mozilla Research by taking part in Project WebXR Viewer, an augmented reality and virtual reality viewer that lets you navigate to XR experiences just like websites.
+Help Mozilla Research by using Project WebXR Viewer, an augmented reality viewer that lets you navigate to AR experiences just like websites, using Apple/iOS ARKit for its AR capabilities.  The application currently supports ARKit 1.5 features, including plane and face anchors, and image recognition.
 
-## In this initial release, you can:
+The master branch of this repository is built and availble in the iOS App Store as the [WebXR Viewer](https://itunes.apple.com/us/app/webxr-viewer/id1295998056?mt=8).
 
-Browse to websites written using [WebXR](https://github.com/mozilla/webxr-polyfill/), a proposal for extending WebVR with AR support that will work across all XR devices.  The WebXR Viewer uses Apple's ARKit to display WebXR content using AR.
+## WARNING: Experimental Exploration of the Future of WebXR
 
-Record and share videos taken of your web content in the real world.
+This experimental browser lets you navigate to websites written using [our non-standard, experimental version of the WebXR API](https://github.com/mozilla/webxr-polyfill/).  The version of WebXR (the javascript library) implemented by this application is based on a [proposed draft proposal for WebXR](https://github.com/mozilla/webxr-api) we created as a starting point for discussing WebXR in the fall of 2017, to explore what it might mean to expand WebVR to include AR/MR capabilities.
 
-To learn more about Project WebXR Viewer and other ways Mozilla is working to bring augmented reality, virtual reality, and mixed reality to the web, visit our website at [mixedreality.mozilla.org](https://mixedreality.mozilla.org/).
+The WebVR community has shifted from WebVR to WebXR, and is now called the [Immersive Web Community Group](https://github.com/immersive-web/), with the WebVR specification becoming the [WebXR Device API](https://github.com/immersive-web/webxr). You should consider that spec as ground-truth for the future of WebXR, and it is what you will likely see appearing in browsers. 
 
-## WARNING
+When the spec has settled and is more mature, we will shift this app and [our version of WebXR](https://github.com/mozilla/webxr-polyfill/) to align with it.  
 
-This application is *not* intended to replace a fully featured web browser. It is meant only for experimenting with building WebXR applications.
+To learn more about the WebXR Viewer and other ways Mozilla is working to bring augmented reality, virtual reality, and mixed reality to the web, visit our website at [mixedreality.mozilla.org](https://mixedreality.mozilla.org/).
+
+## WARNING: Not a full-featured Browser
+
+This application is *not* intended to replace a fully featured web browser. It is meant only for experimenting with WebXR applications on iOS.
 
 ## Building the app for iOS 11
 
-Building this app requires XCode 9 (beta 6 or newer) and an iPhone or iPad running at least iOS 11.
+Building this app requires Xcode 9 (beta 6 or newer) and an iPhone or iPad running at least iOS 11.
 
-You need to run `pod install` so the dependencies are included in the project. Be sure to open the XRViewer.xcworkspace (not the project file) so that you get the cocoapods.
+This app uses Carthage as a dependency manager. Follow the [Carthage installation instructions here](https://github.com/Carthage/Carthage#installing-carthage).
+
+Before opening Xcode, navigate to the project folder in Terminal and update dependencies using Carthage by running:
+
+	cd webxr-ios
+	carthage update
+
+Then use Xcode to open: webxr-ios/XRViewer.xcodeproj
 
 The app will only build if your build target is an iOS 11 *device*, not the simulator. The symptom of this is a missing `CVMetalTextureRef` reference.
 
@@ -26,9 +37,9 @@ For your development build, go to the project settings by clicking the project n
 
 ## Building your own WebXR apps
 
-We have started a [WebXR polyfill](https://github.com/mozilla/webxr-polyfill/) that can use the ARKit to Javascript bridge exposed in this application. You can include that in any web page and use the example code in the same repository to get started building your own XR web applications. 
+Our experimental [WebXR polyfill](https://github.com/mozilla/webxr-polyfill/) can be used to write apps that leverage ARKit in this application. You can include that in any web page and use the example code in the same repository to get started building your own XR web applications. 
 
-While your iOS device is cabled to your development machine, you can use Safari 11 or newer to connect developer tools via Safari's `Develop` menu.
+If you build this app yourself, you can use Safari 11 or newer to connect developer tools via Safari's `Develop` menu.
 
 It can be handy to change the default URL loaded by the app by changing the `WEB_URL` string in WebARKHeader.h to the URL of your local web server. 
 

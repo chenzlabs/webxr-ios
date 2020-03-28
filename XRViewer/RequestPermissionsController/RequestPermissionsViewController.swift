@@ -7,7 +7,6 @@
 //
 
 import UIKit
-import FontAwesomeKit
 import CoreLocation
 import AVFoundation
 import Photos
@@ -24,8 +23,10 @@ class RequestPermissionsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        style(button: buttonGPS, withImage: FAKFontAwesome.locationArrowIcon(withSize: size).image(with: CGSize(width: size, height: size)))
-        style(button: buttonCamera, withImage: FAKFontAwesome.cameraIcon(withSize: size).image(with: CGSize(width: size, height: size)))
+        style(button: buttonGPS)
+        style(button: buttonCamera)
+        locationManager = CLLocationManager()
+        locationManager.delegate = self
         
         if CLLocationManager.authorizationStatus() == .authorizedWhenInUse {
             buttonGPS.isEnabled = false
@@ -36,45 +37,45 @@ class RequestPermissionsViewController: UIViewController {
         }
     }
     
-    fileprivate func style(button: UIButton, withImage image: UIImage) {
+    fileprivate func style(button: UIButton) {
         button.layer.cornerRadius = button.frame.height/2.0
         button.layer.borderColor = self.view.tintColor.cgColor
         button.layer.borderWidth = 2.0
-        button.setImage(image, for: .normal)
     }
 
     @IBAction func buttonGPSAccessTapped() {
-        locationManager = CLLocationManager()
-        locationManager.delegate = self
         if CLLocationManager.authorizationStatus() == .notDetermined {
             locationManager?.requestWhenInUseAuthorization()
         }
     }
     
     @IBAction func buttonCameraAccessTapped() {
+        weak var blockSelf: RequestPermissionsViewController? = self
         if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 DispatchQueue.main.async {
-                    self.buttonCamera.isEnabled = false
-                    self.handlePopupDismiss()
+                    blockSelf?.buttonCamera.isEnabled = false
+                    blockSelf?.handlePopupDismiss()
                 }
             }
-            
         }
     }
     
     func handlePopupDismiss() {
         if !buttonCamera.isEnabled && !buttonGPS.isEnabled {
-            self.presentingViewController?.dismiss(animated: true, completion: nil)
+            presentingViewController?.dismiss(animated: true, completion: nil)
         }
     }
 }
 
 extension RequestPermissionsViewController: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        DispatchQueue.main.async {
-            self.buttonGPS.isEnabled = false
-            self.handlePopupDismiss()
+        weak var blockSelf: RequestPermissionsViewController? = self
+        if CLLocationManager.authorizationStatus() != .notDetermined {
+            DispatchQueue.main.async {
+                blockSelf?.buttonGPS.isEnabled = false
+                blockSelf?.handlePopupDismiss()
+            }
         }
     }
 }
